@@ -1,7 +1,8 @@
-package model
+package models
 
 import (
 	"time"
+
 	"gorm.io/gorm"
 )
 
@@ -15,15 +16,15 @@ type User struct {
 	// Password is hashed with bcrypt
 	Password string `json:"password"`
 
-	// 1 : male 0: female
-	Sex      string `json:"sex"`
-	Age      int    `json:"age"`
-	Email    string `json:"email"`
-	Phone    string `json:"phone"`
-	Address  string `json:"address"`
+	// 0: unknown 1: male 2: female
+	Sex     string `json:"sex"`
+	Age     int    `json:"age"`
+	Email   string `json:"email"`
+	Phone   string `json:"phone"`
+	Address string `json:"address"`
 
-	// 1: admin 2: user
-	Role     string `json:"role"`
+	// 1: normal 2: admin
+	Role string `json:"role"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
