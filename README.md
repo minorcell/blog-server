@@ -1,2 +1,0 @@
-# gtils
-utils of golang
