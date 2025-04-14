@@ -6,6 +6,7 @@ import (
 	"gorm.io/gorm"
 
 	"demos/internal/models"
+	"demos/pkg/utils"
 )
 
 type UserService struct {
@@ -25,7 +26,7 @@ type RegisterRequest struct {
 
 // RegisterResponse 注册响应的数据结构
 type RegisterResponse struct {
-	ID   uint   `json:"id"`
+	ID       uint   `json:"id"`
 	UserName string `json:"userName"`
 	Email    string `json:"email"`
 }
@@ -56,13 +57,19 @@ func (s *UserService) RegisterUser(req *RegisterRequest) (*RegisterResponse, err
 		return nil, errors.New("email already exists")
 	}
 
+	hashedPassword, err := utils.HashPassword(req.Password)
+
+	if err != nil {
+		return nil, errors.New("failed to hash password")
+	}
+
 	user := &models.User{
 		Username: req.UserName,
-		Password: req.Password,
+		Password: hashedPassword,
 		Email:    req.Email,
-		Role:     "1",  // 默认角色为普通用户
-		Sex:      "0",  // 默认性别为未知
-		Age:      0,    // 默认年龄为0
+		Role:     "1", // 默认角色为普通用户
+		Sex:      "0", // 默认性别为未知
+		Age:      0,   // 默认年龄为0
 	}
 
 	// 保存用户到数据库
@@ -72,7 +79,7 @@ func (s *UserService) RegisterUser(req *RegisterRequest) (*RegisterResponse, err
 
 	// 返回精简后的用户信息：删除密码字段
 	return &RegisterResponse{
-		ID:   user.ID,
+		ID:       user.ID,
 		UserName: user.Username,
 		Email:    user.Email,
 	}, nil
