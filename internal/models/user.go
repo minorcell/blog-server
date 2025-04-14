@@ -9,11 +9,9 @@ import (
 type User struct {
 	gorm.Model
 
-	// id is unique and used as the primary key for the user
 	ID uint `json:"id" gorm:"primaryKey"`
 	Username string `json:"username" gorm:"unique"`
 
-	// Password is hashed with bcrypt
 	Password string `json:"password"`
 
 	// 0: unknown 1: male 2: female

@@ -1,6 +1,5 @@
 package response
 
-// 常用状态码常量
 const (
 	StatusSuccess       = 200
 	StatusBadRequest    = 400
@@ -10,14 +9,12 @@ const (
 	StatusInternalError = 500
 )
 
-// Response 统一响应结构
 type Response struct {
-	Code    int         `json:"code"`    // 状态码
-	Message string      `json:"message"` // 提示信息
-	Data    interface{} `json:"data"`    // 数据
+	Code    int         `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
 }
 
-// Success 成功响应
 func Success(data interface{}) *Response {
 	return &Response{
 		Code:    200,
@@ -26,7 +23,6 @@ func Success(data interface{}) *Response {
 	}
 }
 
-// SuccessWithMessage 带自定义消息的成功响应
 func SuccessWithMessage(message string, data interface{}) *Response {
 	return &Response{
 		Code:    StatusSuccess,
@@ -35,7 +31,6 @@ func SuccessWithMessage(message string, data interface{}) *Response {
 	}
 }
 
-// Error 错误响应
 func Error(code int, message string) *Response {
 	return &Response{
 		Code:    code,

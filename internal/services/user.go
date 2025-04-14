@@ -10,94 +10,78 @@ import (
 	"gorm.io/gorm"
 )
 
-// UserService 用户服务结构体，包含数据库连接
 type UserService struct {
-	db *gorm.DB // 使用GORM进行数据库操作
+	db *gorm.DB
 }
 
-// NewUserService 创建UserService实例的构造函数
 func NewUserService(db *gorm.DB) *UserService {
 	return &UserService{db: db}
 }
 
-// RegisterRequest 注册请求数据结构
 type RegisterRequest struct {
-	UserName string `json:"userName"` // 用户名
-	Password string `json:"password"` // 密码(明文)
-	Email    string `json:"email"`    // 邮箱
+	UserName string `json:"userName"`
+	Password string `json:"password"`
+	Email    string `json:"email"`
 }
 
-// RegisterResponse 注册响应数据结构
 type RegisterResponse struct {
-	ID       uint   `json:"id"`       // 用户ID
-	UserName string `json:"userName"` // 用户名
-	Email    string `json:"email"`    // 邮箱
+	ID       uint   `json:"id"`
+	UserName string `json:"userName"`
+	Email    string `json:"email"`
 }
 
-// Validate 验证注册请求数据有效性
 func (r *RegisterRequest) Validate() error {
-	// 检查必填字段是否为空
 	if r.UserName == "" || r.Password == "" || r.Email == "" {
 		return errors.New("username, password and email cannot be empty")
 	}
 	return nil
 }
 
-// RegisterUser 用户注册业务逻辑
 func (s *UserService) RegisterUser(req *RegisterRequest) (*RegisterResponse, error) {
-	// 1. 验证请求数据
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
 
-	// 2. 检查用户名是否已存在
 	var existingUser models.User
 	if err := s.db.Where("username = ?", req.UserName).First(&existingUser).Error; err == nil {
 		return nil, errors.New("username already exists")
 	}
 
-	// 3. 检查邮箱是否已存在
 	if err := s.db.Where("email =?", req.Email).First(&existingUser).Error; err == nil {
 		return nil, errors.New("email already exists")
 	}
 
-	// 4. 密码加密处理
 	hashedPassword, err := utils.HashPassword(req.Password)
 	if err != nil {
 		return nil, errors.New("failed to hash password")
 	}
 
-	// 5. 构建用户模型
 	user := &models.User{
-		Username: req.UserName,   // 用户名
-		Password: hashedPassword, // 加密后的密码
-		Email:    req.Email,      // 邮箱
-		Role:     "1",            // 默认角色: 普通用户
-		Sex:      "0",            // 默认性别: 未知
-		Age:      0,              // 默认年龄: 0
+		Username: req.UserName,
+		Password: hashedPassword,
+		Email:    req.Email,
+		Role:     "1",
+		Sex:      "0",
+		Age:      0,
 	}
 
-	// 6. 保存用户到数据库
 	if err := s.db.Create(user).Error; err != nil {
 		return nil, errors.New("failed to create user")
 	}
 
-	// 7. 返回响应数据(过滤敏感信息)
 	return &RegisterResponse{
-		ID:       user.ID,       // 用户ID
-		UserName: user.Username, // 用户名
-		Email:    user.Email,    // 邮箱
+		ID:       user.ID,
+		UserName: user.Username,
+		Email:    user.Email,
 	}, nil
 }
 
-// LoginRequest 登录请求数据结构
 type LoginRequest struct {
-	Email    string `json:"email"`    // 邮箱(与用户名二选一)
-	UserName string `json:"userName"` // 用户名(与邮箱二选一)
-	Password string `json:"password"` // 密码(明文)
+	Email    string `json:"email"`
+	UserName string `json:"userName"`
+	Password string `json:"password"`
 }
 
-// LoginUserResponse 登录响应数据结构(过滤敏感信息)
 type LoginUserResponse struct {
 	ID        uint      `json:"id"`
 	UserName  string    `json:"userName"`
@@ -109,52 +93,41 @@ type LoginUserResponse struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// LoginResponse 登录响应数据结构
 type LoginResponse struct {
-	Token string             `json:"token"` // JWT令牌
-	User  *LoginUserResponse `json:"user"`  // 过滤后的用户信息
+	Token string             `json:"token"`
+	User  *LoginUserResponse `json:"user"`
 }
 
-// Validate 验证登录请求数据有效性
 func (r *LoginRequest) Validate() error {
-	// 检查至少提供邮箱或用户名之一
 	if r.Email == "" && r.UserName == "" {
 		return errors.New("email or username cannot be empty")
 	}
-	// 检查密码是否为空
 	if r.Password == "" {
 		return errors.New("password cannot be empty")
 	}
 	return nil
 }
 
-// LoginUser 用户登录业务逻辑
 func (s *UserService) LoginUser(req *LoginRequest) (*LoginResponse, error) {
-	// 1. 验证请求数据
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
-
-	// 2. 查询用户(通过邮箱或用户名)
 	var user models.User
 	if err := s.db.Where("email = ?", req.Email).Or("username = ?", req.UserName).First(&user).Error; err != nil {
 		return nil, errors.New("invalid email or username")
 	}
 
-	// 3. 验证密码
 	if !utils.ValidatePassword(req.Password, user.Password) {
 		return nil, errors.New("invalid password")
 	}
 
-	// 4. 生成JWT令牌
 	token, err := utils.GenerateToken(int(user.ID), user.Role)
 	if err != nil {
 		return nil, errors.New("failed to generate token")
 	}
 
-	// 5. 返回响应数据
 	return &LoginResponse{
-		Token: token, // JWT令牌
+		Token: token,
 		User: &LoginUserResponse{
 			ID:        user.ID,
 			UserName:  user.Username,
@@ -168,7 +141,6 @@ func (s *UserService) LoginUser(req *LoginRequest) (*LoginResponse, error) {
 	}, nil
 }
 
-// GetUserInfoResponse 获取用户信息请求数据结构
 type GetUserInfoResponse struct {
 	ID        uint      `json:"id"`
 	UserName  string    `json:"userName"`
@@ -180,12 +152,10 @@ type GetUserInfoResponse struct {
 	UpdatedAt time.Time `json:"updatedAt"`
 }
 
-// GetUserInfoRequest 获取用户信息请求数据结构
 type GetUserInfoRequest struct {
-	ID uint `json:"id"` // 用户ID
+	ID uint `json:"id"`
 }
 
-// GetUserInfo 获取用户信息
 func (s *UserService) GetUserInfo(req *gin.Context) (*GetUserInfoResponse, error) {
 	quaryID := req.Query("id")
 	if quaryID == "" {
@@ -208,7 +178,6 @@ func (s *UserService) GetUserInfo(req *gin.Context) (*GetUserInfoResponse, error
 	}, nil
 }
 
-// UpdateResponse 更新用户信息返回
 type UpdateResponse struct {
 	ID        uint      `json:"id"`
 	UserName  string    `json:"userName"`
@@ -236,25 +205,20 @@ func (r *UpdateRequest) Validate() error {
 	return nil
 }
 
-// UpdateUser 更新用户信息请求
 func (s *UserService) UpdateUser(req *gin.Context, user_id int) (*UpdateResponse, error) {
-	// 1. 解析请求体
 	var updateReq UpdateRequest
 	if err := req.ShouldBindJSON(&updateReq); err!= nil {
 		return nil, errors.New("invalid request body")
 	}
-	// 2. 检查req完整性
 	if err := updateReq.Validate(); err!= nil {
 		return nil, err
 	}
 
-	// 3. 查询用户
 	var user models.User
 	if err := s.db.First(&user, user_id).Error; err!= nil {
 		return nil, errors.New("user not found")
 	}
 
-	// 4. 检查用户名是否已被其他用户使用
 	if updateReq.UserName != "" && updateReq.UserName != user.Username {
 		var existingUser models.User
 		if err := s.db.Where("username = ? AND id != ?", updateReq.UserName, user_id).First(&existingUser).Error; err == nil {
@@ -262,7 +226,6 @@ func (s *UserService) UpdateUser(req *gin.Context, user_id int) (*UpdateResponse
 		}
 	}
 
-	// 5. 检查邮箱是否已被其他用户使用
 	if updateReq.Email != "" && updateReq.Email != user.Email {
 		var existingUser models.User
 		if err := s.db.Where("email = ? AND id != ?", updateReq.Email, user_id).First(&existingUser).Error; err == nil {
@@ -270,7 +233,6 @@ func (s *UserService) UpdateUser(req *gin.Context, user_id int) (*UpdateResponse
 		}
 	}
 
-	// 6. 更新用户信息
 	updates := make(map[string]interface{})
 
 	if updateReq.UserName != "" {
@@ -289,12 +251,9 @@ func (s *UserService) UpdateUser(req *gin.Context, user_id int) (*UpdateResponse
 		updates["address"] = updateReq.Address
 	}
 
-	// 7. 执行更新操作
 	if err := s.db.Model(&user).Updates(updates).Error; err != nil {
 		return nil, errors.New("failed to update user information")
 	}
-
-	// 8. 返回更新后的用户信息
 	return &UpdateResponse{
 		ID:        user.ID,
 		UserName:  user.Username,
