@@ -8,10 +8,25 @@ import (
 	"demos/internal/models"
 )
 
+type UserService struct {
+	db *gorm.DB
+}
+
+func NewUserService(db *gorm.DB) *UserService {
+	return &UserService{db: db}
+}
+
 // RegisterRequest 注册请求的数据结构
 type RegisterRequest struct {
 	UserName string `json:"userName"`
 	Password string `json:"password"`
+	Email    string `json:"email"`
+}
+
+// RegisterResponse 注册响应的数据结构
+type RegisterResponse struct {
+	ID   uint   `json:"id"`
+	UserName string `json:"userName"`
 	Email    string `json:"email"`
 }
 
@@ -23,21 +38,13 @@ func (r *RegisterRequest) Validate() error {
 	return nil
 }
 
-type UserService struct {
-	db *gorm.DB
-}
-
-func NewUserService(db *gorm.DB) *UserService {
-	return &UserService{db: db}
-}
-
 // RegisterUser 注册用户
-func (s *UserService) RegisterUser(req *RegisterRequest) (*models.User, error) {
+func (s *UserService) RegisterUser(req *RegisterRequest) (*RegisterResponse, error) {
 	// 验证请求数据
 	if err := req.Validate(); err != nil {
 		return nil, err
 	}
-	
+
 	// 检查用户名是否已存在
 	var existingUser models.User
 	if err := s.db.Where("username = ?", req.UserName).First(&existingUser).Error; err == nil {
@@ -53,7 +60,9 @@ func (s *UserService) RegisterUser(req *RegisterRequest) (*models.User, error) {
 		Username: req.UserName,
 		Password: req.Password,
 		Email:    req.Email,
-		Role:     "1",
+		Role:     "1",  // 默认角色为普通用户
+		Sex:      "0",  // 默认性别为未知
+		Age:      0,    // 默认年龄为0
 	}
 
 	// 保存用户到数据库
@@ -62,10 +71,9 @@ func (s *UserService) RegisterUser(req *RegisterRequest) (*models.User, error) {
 	}
 
 	// 返回精简后的用户信息：删除密码字段
-	return &models.User{
-		UserID:   user.UserID,
-		Username: user.Username,
+	return &RegisterResponse{
+		ID:   user.ID,
+		UserName: user.Username,
 		Email:    user.Email,
-		Role:     user.Role,
 	}, nil
 }
