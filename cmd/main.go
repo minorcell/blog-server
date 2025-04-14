@@ -1,13 +1,13 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"os"
-
 	"demos/internal/controllers"
 	"demos/internal/models"
 	"demos/internal/services"
+	"demos/pkg/middleware"
+	"fmt"
+	"log"
+	"os"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -46,6 +46,9 @@ func main() {
 
 	router := gin.Default()
 
+	// 开发时，仅允许来自本地的请求
+	router.SetTrustedProxies([]string{"127.0.0.1"})
+
 	router.Use(gin.Recovery())
 
 	// 初始化服务层
@@ -60,11 +63,7 @@ func main() {
 	{
 		auth.POST("/login", userController.LoginUser)
 		auth.POST("/register", userController.RegisterUser)
-		auth.POST("/logout", func(ctx *gin.Context) {
-			ctx.JSON(200, gin.H{
-				"message": "Logout",
-			})
-		})
+		auth.GET("/user-info", middleware.AuthMiddleware(), userController.GetUserInfo)
 	}
 
 	port := os.Getenv("SERVER_PORT")
@@ -74,7 +73,6 @@ func main() {
 
 	// 启动服务器
 	serverAddr := fmt.Sprintf(":%s", port)
-	log.Printf("Server starting on %s", serverAddr)
 	if err := router.Run(serverAddr); err != nil {
 		log.Fatal("Server failed to start:", err)
 	}

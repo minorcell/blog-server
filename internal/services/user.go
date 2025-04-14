@@ -6,6 +6,7 @@ import (
 	"errors"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	"gorm.io/gorm"
 )
 
@@ -164,5 +165,45 @@ func (s *UserService) LoginUser(req *LoginRequest) (*LoginResponse, error) {
 			CreatedAt: user.CreatedAt,
 			UpdatedAt: user.UpdatedAt,
 		},
+	}, nil
+}
+
+// GetUserInfoResponse 获取用户信息请求数据结构
+type GetUserInfoResponse struct {
+	ID        uint      `json:"id"`
+	UserName  string    `json:"userName"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	Sex       string    `json:"sex"`
+	Age       int       `json:"age"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+// GetUserInfoRequest 获取用户信息请求数据结构
+type GetUserInfoRequest struct {
+	ID uint `json:"id"` // 用户ID
+}
+
+// GetUserInfo 获取用户信息
+func (s *UserService) GetUserInfo(req *gin.Context) (*GetUserInfoResponse, error) {
+	quaryID := req.Query("id")
+	if quaryID == "" {
+		return nil, errors.New("id cannot be empty")
+	}
+	var user models.User
+	if err := s.db.First(&user, quaryID).Error; err != nil {
+		return nil, err
+	}
+
+	return &GetUserInfoResponse{
+		ID:        user.ID,
+		UserName:  user.Username,
+		Email:     user.Email,
+		Role:      user.Role,
+		Sex:       user.Sex,
+		Age:       user.Age,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
 	}, nil
 }

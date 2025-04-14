@@ -37,13 +37,22 @@ func (c *UserController) RegisterUser(ctx *gin.Context) {
 
 func (c *UserController) LoginUser(ctx *gin.Context) {
 	var req services.LoginRequest
-	if err := ctx.ShouldBindJSON(&req); err!= nil {
+	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusOK, response.Error(response.StatusBadRequest, "Invalid request data"))
 		return
 	}
 	token, err := c.userService.LoginUser(&req)
-	if err!= nil {
+	if err != nil {
 		ctx.JSON(http.StatusOK, response.Error(response.StatusInternalError, err.Error()))
 	}
 	ctx.JSON(http.StatusOK, response.SuccessWithMessage("Login successful", token))
+}
+
+func (c *UserController) GetUserInfo(ctx *gin.Context) {
+	user, err := c.userService.GetUserInfo(ctx)
+	if err != nil {
+		ctx.JSON(http.StatusOK, response.Error(response.StatusInternalError, err.Error()))
+		return
+	}
+	ctx.JSON(http.StatusOK, response.SuccessWithMessage("User info retrieved successfully", user))
 }
