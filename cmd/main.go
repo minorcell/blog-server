@@ -64,6 +64,7 @@ func main() {
 		auth.POST("/login", userController.LoginUser)
 		auth.POST("/register", userController.RegisterUser)
 		auth.GET("/user-info", middleware.AuthMiddleware(), userController.GetUserInfo)
+		auth.PUT("/user-info", middleware.AuthMiddleware(), userController.UpdateUserInfo)
 	}
 
 	port := os.Getenv("SERVER_PORT")

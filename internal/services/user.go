@@ -207,3 +207,103 @@ func (s *UserService) GetUserInfo(req *gin.Context) (*GetUserInfoResponse, error
 		UpdatedAt: user.UpdatedAt,
 	}, nil
 }
+
+// UpdateResponse 更新用户信息返回
+type UpdateResponse struct {
+	ID        uint      `json:"id"`
+	UserName  string    `json:"userName"`
+	Address   string    `json:"address"`
+	Email     string    `json:"email"`
+	Role      string    `json:"role"`
+	Sex       string    `json:"sex"`
+	Age       int       `json:"age"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+}
+
+type UpdateRequest struct {
+	UserName string `json:"userName"`
+	Email    string `json:"email"`
+	Sex      string `json:"sex"`
+	Age      int    `json:"age"`
+	Address  string `json:"address"`
+}
+
+func (r *UpdateRequest) Validate() error {
+	if r.UserName == "" && r.Email == "" && r.Sex == "" && r.Age == 0 && r.Address == "" {
+		return errors.New("at least one field must be provided")
+	}
+	return nil
+}
+
+// UpdateUser 更新用户信息请求
+func (s *UserService) UpdateUser(req *gin.Context, user_id int) (*UpdateResponse, error) {
+	// 1. 解析请求体
+	var updateReq UpdateRequest
+	if err := req.ShouldBindJSON(&updateReq); err!= nil {
+		return nil, errors.New("invalid request body")
+	}
+	// 2. 检查req完整性
+	if err := updateReq.Validate(); err!= nil {
+		return nil, err
+	}
+
+	// 3. 查询用户
+	var user models.User
+	if err := s.db.First(&user, user_id).Error; err!= nil {
+		return nil, errors.New("user not found")
+	}
+
+	// 4. 检查用户名是否已被其他用户使用
+	if updateReq.UserName != "" && updateReq.UserName != user.Username {
+		var existingUser models.User
+		if err := s.db.Where("username = ? AND id != ?", updateReq.UserName, user_id).First(&existingUser).Error; err == nil {
+			return nil, errors.New("username already exists")
+		}
+	}
+
+	// 5. 检查邮箱是否已被其他用户使用
+	if updateReq.Email != "" && updateReq.Email != user.Email {
+		var existingUser models.User
+		if err := s.db.Where("email = ? AND id != ?", updateReq.Email, user_id).First(&existingUser).Error; err == nil {
+			return nil, errors.New("email already exists")
+		}
+	}
+
+	// 6. 更新用户信息
+	updates := make(map[string]interface{})
+
+	if updateReq.UserName != "" {
+		updates["username"] = updateReq.UserName
+	}
+	if updateReq.Email != "" {
+		updates["email"] = updateReq.Email
+	}
+	if updateReq.Sex != "" {
+		updates["sex"] = updateReq.Sex
+	}
+	if updateReq.Age != 0 {
+		updates["age"] = updateReq.Age
+	}
+	if updateReq.Address != "" {
+		updates["address"] = updateReq.Address
+	}
+
+	// 7. 执行更新操作
+	if err := s.db.Model(&user).Updates(updates).Error; err != nil {
+		return nil, errors.New("failed to update user information")
+	}
+
+	// 8. 返回更新后的用户信息
+	return &UpdateResponse{
+		ID:        user.ID,
+		UserName:  user.Username,
+		Email:     user.Email,
+		Address:   user.Address,
+		Role:      user.Role,
+		Sex:       user.Sex,
+		Age:       user.Age,
+		CreatedAt: user.CreatedAt,
+		UpdatedAt: user.UpdatedAt,
+	}, nil
+}

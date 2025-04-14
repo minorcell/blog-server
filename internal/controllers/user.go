@@ -56,3 +56,18 @@ func (c *UserController) GetUserInfo(ctx *gin.Context) {
 	}
 	ctx.JSON(http.StatusOK, response.SuccessWithMessage("User info retrieved successfully", user))
 }
+
+func (c *UserController) UpdateUserInfo(ctx *gin.Context) {
+	user_id, excits := ctx.Get("user_id")
+	if !excits {
+		ctx.JSON(http.StatusOK, response.Error(response.StatusInternalError, "Role not found"))
+		return
+	}
+
+	user, err := c.userService.UpdateUser(ctx, user_id.(int))
+	if err != nil {
+		ctx.JSON(http.StatusOK, response.Error(response.StatusInternalError, err.Error()))
+		return
+	}
+	ctx.JSON(http.StatusOK, response.SuccessWithMessage("User info updated successfully", user))
+}
