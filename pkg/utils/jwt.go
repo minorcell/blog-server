@@ -18,7 +18,7 @@ var (
 // 包含用户ID、角色和标准JWT声明
 type JwtClaims struct {
 	UserId               int `json:"user_id"` // 用户ID，用于标识用户
-	Role                 int `json:"role"`    // 用户角色，用于权限控制
+	Role                 string `json:"role"`    // 用户角色，用于权限控制
 	jwt.RegisteredClaims     // 嵌入标准JWT声明(过期时间、签发时间等)
 }
 
@@ -30,7 +30,7 @@ type JwtClaims struct {
 // 返回值:
 //   - string: 生成的token字符串
 //   - error: 生成过程中遇到的错误
-func GenerateToken(userId int, role int) (string, error) {
+func GenerateToken(userId int, role string) (string, error) {
 	// 从环境变量中获取JWT密钥
 	SecretKey := os.Getenv("JWT_SECRET")
 	if len(SecretKey) == 0 {

@@ -5,9 +5,9 @@ import (
 	"log"
 	"os"
 
+	"demos/internal/controllers"
 	"demos/internal/models"
 	"demos/internal/services"
-	"demos/internal/controllers"
 
 	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
@@ -58,11 +58,7 @@ func main() {
 
 	auth := v1.Group("/auth")
 	{
-		auth.POST("/login", func(ctx *gin.Context) {
-			ctx.JSON(200, gin.H{
-				"message": "Login",
-			})
-		})
+		auth.POST("/login", userController.LoginUser)
 		auth.POST("/register", userController.RegisterUser)
 		auth.POST("/logout", func(ctx *gin.Context) {
 			ctx.JSON(200, gin.H{
